@@ -20,12 +20,28 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
+  'http://127.0.0.1:5173',
   'https://jobconnect-frontend-wine.vercel.app',
+  'https://jobconnect-frontend-git-main-*.vercel.app',
+  'https://*.vercel.app',
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const allowed = allowedOrigins.some((pattern) => {
+      if (pattern.includes('*')) {
+        const regex = new RegExp(`^${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*')}$`);
+        return regex.test(origin);
+      }
+      return pattern === origin;
+    });
+
+    if (allowed) {
       callback(null, true);
       return;
     }
@@ -43,7 +59,20 @@ app.use(express.json());
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const allowed = allowedOrigins.some((pattern) => {
+        if (pattern.includes('*')) {
+          const regex = new RegExp(`^${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*')}$`);
+          return regex.test(origin);
+        }
+        return pattern === origin;
+      });
+
+      if (allowed) {
         callback(null, true);
         return;
       }

@@ -6,8 +6,25 @@ const User = require('../models/User');
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const viewerId = req.query.viewerId || null;
     const user = await User.findById(id).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const isOwner = !!viewerId && viewerId === id;
+    if (!isOwner) {
+      return res.json({
+        _id: user._id,
+        fullName: user.fullName,
+        username: user.username,
+        avatar: user.avatar,
+        location: user.location,
+        bio: user.bio,
+        skills: user.skills || [],
+        experience: user.experience,
+        contactInfo: null,
+      });
+    }
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });

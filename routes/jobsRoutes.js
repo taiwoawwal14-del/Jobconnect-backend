@@ -55,8 +55,16 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const job = await Job.findByIdAndDelete(id);
+    const { userId } = req.body || {};
+    const job = await Job.findById(id);
+
     if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.poster && String(job.poster) !== String(userId)) {
+      return res.status(403).json({ error: 'You can only delete your own job.' });
+    }
+
+    await Job.findByIdAndDelete(id);
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
