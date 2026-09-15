@@ -145,4 +145,4 @@ server.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
 
-// make the navbar in the jobs page to be a scroll bar ok and make the profile display to be efficient and good also make a good positioning for every thing and don't make it come pleacated and the pages navbar it feels some how can you fix it for 
+
