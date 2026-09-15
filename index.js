@@ -7,6 +7,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const Message = require('./models/Message');
 
 const authRoutes = require('./routes/authRoutes');
 const jobsRoutes = require('./routes/jobsRoutes');
@@ -15,7 +16,6 @@ const userRoutes = require('./routes/userRoutes');
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
-const roomMessages = {};
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
@@ -85,22 +85,30 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
-  socket.on('join_room', ({ roomId, userId }) => {
+  socket.on('join_room', async ({ roomId, userId }) => {
     if (!roomId) return;
     socket.join(roomId);
     socket.data.roomId = roomId;
     socket.data.userId = userId;
-    if (roomMessages[roomId]) {
-      socket.emit('chat_history', roomMessages[roomId]);
+    try {
+      const history = await Message.find({ roomId })
+        .sort({ createdAt: 1 })
+        .limit(50)
+        .lean();
+      socket.emit('chat_history', history.map((message) => ({
+        ...message,
+        id: message._id.toString(),
+      })));
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
     }
   });
 
-  socket.on('send_message', (payload) => {
+  socket.on('send_message', async (payload) => {
     const roomId = payload?.roomId;
     if (!roomId || !payload?.text?.trim()) return;
 
     const message = {
-      id: Date.now().toString(),
       roomId,
       senderId: payload.senderId,
       senderName: payload.senderName || 'User',
@@ -108,13 +116,15 @@ io.on('connection', (socket) => {
       createdAt: new Date().toISOString(),
     };
 
-    if (!roomMessages[roomId]) roomMessages[roomId] = [];
-    roomMessages[roomId].push(message);
-    if (roomMessages[roomId].length > 50) {
-      roomMessages[roomId] = roomMessages[roomId].slice(-50);
+    try {
+      const savedMessage = await Message.create(message);
+      io.to(roomId).emit('receive_message', {
+        ...savedMessage.toObject(),
+        id: savedMessage._id.toString(),
+      });
+    } catch (err) {
+      console.error('Failed to save chat message:', err);
     }
-
-    io.to(roomId).emit('receive_message', message);
   });
 });
 
@@ -134,3 +144,5 @@ app.get('/', (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
+// make the navbar in the jobs page to be a scroll bar ok and make the profile display to be efficient and good also make a good positioning for every thing and don't make it come pleacated and the pages navbar it feels some how can you fix it for 

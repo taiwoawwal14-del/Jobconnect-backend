@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
+// GET /api/users - lightweight list used to start a direct chat.
+router.get('/', async (req, res) => {
+  try {
+    const { excludeId } = req.query;
+    const filter = excludeId ? { _id: { $ne: excludeId } } : {};
+    const users = await User.find(filter)
+      .select('fullName username avatar')
+      .sort({ fullName: 1 })
+      .limit(50)
+      .lean();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/users/:id - get user profile
 router.get('/:id', async (req, res) => {
   try {
