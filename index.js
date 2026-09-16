@@ -7,7 +7,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { Server } = require('socket.io');
-const Message = require('./models/Message');
 
 const authRoutes = require('./routes/authRoutes');
 const jobsRoutes = require('./routes/jobsRoutes');
@@ -84,23 +83,21 @@ const io = new Server(server, {
   },
 });
 
+const Message = require('./models/Message');
+
 io.on('connection', (socket) => {
   socket.on('join_room', async ({ roomId, userId }) => {
     if (!roomId) return;
     socket.join(roomId);
     socket.data.roomId = roomId;
     socket.data.userId = userId;
+
+    // Load history from DB
     try {
-      const history = await Message.find({ roomId })
-        .sort({ createdAt: 1 })
-        .limit(50)
-        .lean();
-      socket.emit('chat_history', history.map((message) => ({
-        ...message,
-        id: message._id.toString(),
-      })));
+      const history = await Message.find({ roomId }).sort({ createdAt: 1 });
+      socket.emit('chat_history', history);
     } catch (err) {
-      console.error('Failed to load chat history:', err);
+      console.error("Error loading history:", err);
     }
   });
 
@@ -108,22 +105,18 @@ io.on('connection', (socket) => {
     const roomId = payload?.roomId;
     if (!roomId || !payload?.text?.trim()) return;
 
-    const message = {
+    const message = new Message({
       roomId,
       senderId: payload.senderId,
       senderName: payload.senderName || 'User',
       text: payload.text.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    });
 
     try {
-      const savedMessage = await Message.create(message);
-      io.to(roomId).emit('receive_message', {
-        ...savedMessage.toObject(),
-        id: savedMessage._id.toString(),
-      });
+      await message.save();
+      io.to(roomId).emit('receive_message', message);
     } catch (err) {
-      console.error('Failed to save chat message:', err);
+      console.error("Error saving message:", err);
     }
   });
 });
@@ -144,5 +137,6 @@ app.get('/', (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
 
 
