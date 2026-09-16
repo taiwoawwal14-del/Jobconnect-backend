@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     const jobs = await Job.find().sort({ createdAt: -1 }).populate('poster', 'fullName username avatar');
     res.json(jobs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message }); // <--- THIS line returned the error to your frontend
   }
 });
 
