@@ -20,12 +20,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/jobconnect';
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'http://127.0.0.1:3000',
-  'http://localhost:4173',
   'https://jobconnect-frontend-wine.vercel.app',
   'https://jobconnect-frontend-git-main-*.vercel.app',
   'https://*.vercel.app',
