@@ -83,41 +83,37 @@ const io = new Server(server, {
   },
 });
 
-const Message = require('./models/Message');
+const roomMessages = new Map();
 
 io.on('connection', (socket) => {
-  socket.on('join_room', async ({ roomId, userId }) => {
+  socket.on('join_room', ({ roomId, userId }) => {
     if (!roomId) return;
     socket.join(roomId);
     socket.data.roomId = roomId;
     socket.data.userId = userId;
 
-    // Load history from DB
-    try {
-      const history = await Message.find({ roomId }).sort({ createdAt: 1 });
-      socket.emit('chat_history', history);
-    } catch (err) {
-      console.error("Error loading history:", err);
-    }
+    const history = roomMessages.get(roomId) || [];
+    socket.emit('chat_history', history);
   });
 
-  socket.on('send_message', async (payload) => {
+  socket.on('send_message', (payload) => {
     const roomId = payload?.roomId;
     if (!roomId || !payload?.text?.trim()) return;
 
-    const message = new Message({
+    const message = {
+      _id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
       roomId,
       senderId: payload.senderId,
       senderName: payload.senderName || 'User',
       text: payload.text.trim(),
-    });
+      createdAt: new Date().toISOString(),
+    };
 
-    try {
-      await message.save();
-      io.to(roomId).emit('receive_message', message);
-    } catch (err) {
-      console.error("Error saving message:", err);
-    }
+    const existing = roomMessages.get(roomId) || [];
+    const next = [...existing, message];
+    roomMessages.set(roomId, next);
+
+    io.to(roomId).emit('receive_message', message);
   });
 });
 
