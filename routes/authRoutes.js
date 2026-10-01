@@ -6,7 +6,9 @@ const bcrypt = require('bcryptjs');
 // POST /api/signup
 router.post('/signup', async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const fullName = String(req.body?.fullName || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '').trim();
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ error: 'Please enter all fields (fullName, email, password)' });
@@ -20,31 +22,37 @@ router.post('/signup', async (req, res) => {
     const newUser = new User({ fullName, email, password });
     await newUser.save();
 
-    // return created user info (no password)
-    res.status(201).json({ message: 'User registered successfully!', user: { id: newUser._id, email: newUser.email, fullName: newUser.fullName } });
+    res.status(201).json({
+      message: 'User registered successfully!',
+      user: { id: newUser._id, email: newUser.email, fullName: newUser.fullName },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-    // POST /api/login
-    router.post('/login', async (req, res) => {
-      try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-          return res.status(400).json({ error: 'Please provide email and password' });
-        }
+router.post('/login', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '').trim();
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Please provide email and password' });
+    }
 
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ error: 'Invalid credentials' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
-        res.json({ message: 'Login successful', user: { id: user._id, email: user.email, fullName: user.fullName } });
-      } catch (err) {
-        res.status(500).json({ error: err.message });
-      }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ error: 'Invalid credentials' });
+
+    res.json({
+      message: 'Login successful',
+      user: { id: user._id, email: user.email, fullName: user.fullName },
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

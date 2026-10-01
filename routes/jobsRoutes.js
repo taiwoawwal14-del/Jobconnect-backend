@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
       paymentFrequency,
       requirements,
       poster,
-    } = req.body;
+    } = req.body || {};
 
     if (!title || !description || !salary || !location || !workType || !paymentFrequency || !requirements) {
       return res.status(400).json({ error: 'Please fill out all job details.' });
