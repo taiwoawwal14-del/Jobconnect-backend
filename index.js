@@ -170,22 +170,19 @@ app.get('/', (req, res) => {
 });
 
 const startServer = (port) => {
-  server.once('error', (err) => {
+  server.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+
+  server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`Port ${port} is already in use. Close the other Node process or change PORT in the Backend .env file.`);
+      console.error(`Port ${port} is already in use.`);
       process.exit(1);
     }
 
     console.error('Server startup error:', err);
     process.exit(1);
   });
-
-  server.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`);
-  });
 };
 
 startServer(PORT);
-
-
-
